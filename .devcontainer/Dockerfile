@@ -28,6 +28,7 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 &
     echo ${username} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${username} && \
     chmod 0440 /etc/sudoers.d/${username}
 
+
 WORKDIR /app
 
 COPY requirements.txt .

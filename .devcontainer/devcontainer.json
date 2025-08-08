@@ -1,8 +1,11 @@
 {
     "name": "digital-stamp-ralliy",
-    "dockerFile": "Dockerfile",
-    "context": "../",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
     "workspaceFolder": "/app",
+    "remoteEnv": {
+        "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+    },
     "customizations": {
         "vscode": {
             "settings": {
@@ -16,5 +19,6 @@
             ]
         }
     },
-    "postAttachCommand": "./postAttach.sh"
+    "postAttachCommand": ".devcontainer/postAttach.sh",
+    "remoteUser": "vscode"
 }
