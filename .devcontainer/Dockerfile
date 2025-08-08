@@ -34,7 +34,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN wget https://github.com/THU-MIG/yolov10/releases/download/v1.1/yolov10x.pt -O yolov10x.pt
+RUN mkdir data/
+RUN wget https://github.com/THU-MIG/yolov10/releases/download/v1.1/yolov10x.pt -O data/yolov10x.pt
 
 USER ${username}
 
