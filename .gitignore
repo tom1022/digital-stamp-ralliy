@@ -58,9 +58,7 @@ logs/
 *.pt
 *.pth
 *.onnx
-models/
 checkpoints/
-data/
 datasets/
 
 # 一時ファイル

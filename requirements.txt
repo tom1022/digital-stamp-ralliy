@@ -1,2 +1,8 @@
-flask
-ultralytics[yolo]
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Pillow
+ultralytics
+torch
+opencv-python
+pyqrcode
