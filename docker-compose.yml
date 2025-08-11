@@ -22,7 +22,6 @@ services:
     command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app.create_app():app"]
     expose:
       - 8000
-    profiles: ["production"]
 
   nginx:
     image: nginx:alpine
@@ -33,7 +32,6 @@ services:
       - 80:80
     depends_on:
       - app
-    profiles: ["production"]
 
 volumes:
   mysql-data:
