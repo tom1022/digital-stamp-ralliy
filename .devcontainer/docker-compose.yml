@@ -46,3 +46,7 @@ services:
     depends_on:
       - app
     profiles: ["production"]
+
+volumes:
+  mysql-data:
+    driver: local
