@@ -1,77 +1,110 @@
-# blueprints/main/routes.py
-from flask import render_template, request, jsonify, make_response, redirect, url_for
+from flask import Blueprint, request, jsonify
 import uuid
 import os
-from app import db # app.pyで定義したdbインスタンスをインポート
-from models.users import User
-from . import main_bp
+import json
+from extensions import db
+from models.user import User
 from utils.yolo_detector import detect_landmark
 
-# トップページ
-@main_bp.route('/')
-def index():
-    user_uuid = request.cookies.get('uuid')
-    if not user_uuid:
-        # UUIDが存在しない場合、新しいUUIDを作成しクッキーに保存
-        user_uuid = str(uuid.uuid4())
-        new_user = User(uuid=user_uuid, collected_stamps=0, has_prize=False)
+main_bp = Blueprint('main_bp', __name__)
+
+# ランドマーク情報を読み込む関数
+def load_landmarks():
+    landmarks_path = os.path.join(os.path.dirname(__file__), '../../data/landmarks.json')
+    try:
+        with open(landmarks_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+def get_user_from_header():
+    """リクエストヘッダーからUUIDを取得し、ユーザーを返すヘルパー関数"""
+    user_uuid = request.headers.get('X-User-UUID')
+    if user_uuid:
+        return User.query.filter_by(uuid=user_uuid).first()
+    return None
+
+# --- APIエンドポイント ---
+
+@main_bp.route('/', methods=['POST'])
+def create_or_get_user():
+    """UUIDを生成または取得し、ユーザー情報を返す"""
+    user = get_user_from_header()
+    
+    if not user:
+        # 新規ユーザーの場合
+        new_uuid = str(uuid.uuid4())
+        new_user = User(uuid=new_uuid, collected_stamps=0, has_prize=False)
         db.session.add(new_user)
         db.session.commit()
         
-        response = make_response(render_template('index.html'))
-        response.set_cookie('uuid', user_uuid)
-        return response
-
-    # UUIDが存在する場合、ユーザー情報を取得して表示
-    user = User.query.filter_by(uuid=user_uuid).first()
-    if user and user.collected_stamps >= 5: # 例：スタンプが5つでコンプリート
-        return redirect(url_for('main_bp.final_page'))
-
-    return render_template('index.html')
-
-# 画像アップロードページ
-@main_bp.route('/upload', methods=['GET', 'POST'])
-def upload():
-    user_uuid = request.cookies.get('uuid')
-    user = User.query.filter_by(uuid=user_uuid).first()
-    if not user:
-        return redirect(url_for('main_bp.index'))
-
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            return jsonify({'error': 'No file part'}), 400
-
-        image_file = request.files['image']
-        if image_file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-
-        # 画像をサーバーに一時保存
-        image_path = os.path.join('/tmp', image_file.filename)
-        image_file.save(image_path)
-
-        # YOLOv10で画像認識を実行
-        landmark_id = detect_landmark(image_path)
-        os.remove(image_path) # 一時ファイルを削除
-
-        if landmark_id and landmark_id not in user.stamps_collected:
-            # 新しいスタンプの場合、データベースを更新
-            user.stamps_collected.append(landmark_id)
-            user.collected_stamps = len(user.stamps_collected)
-            db.session.commit()
-            return jsonify({'status': 'stamp_granted', 'landmark_id': landmark_id})
+        all_landmarks = load_landmarks()
         
-        return jsonify({'status': 'no_new_stamp'})
+        return jsonify({
+            'status': 'new_user',
+            'user_uuid': new_uuid,
+            'landmarks': {
+                'collected': [],
+                'uncollected': [{'id': k, 'name': v} for k, v in all_landmarks.items() if k != '000']
+            }
+        })
 
-    return render_template('upload.html')
+    # 既存ユーザーの場合
+    all_landmarks = load_landmarks()
+    collected_landmark_ids = user.stamps_collected if hasattr(user, 'stamps_collected') else []
+    
+    landmarks = {
+        'collected': [{'id': lid, 'name': all_landmarks.get(lid)} for lid in collected_landmark_ids if lid in all_landmarks],
+        'uncollected': [{'id': k, 'name': v} for k, v in all_landmarks.items() if k not in collected_landmark_ids and k != '000']
+    }
 
-# 全スタンプ獲得後のQRコード表示ページ
-@main_bp.route('/final')
+    return jsonify({
+        'status': 'existing_user',
+        'user_uuid': user.uuid,
+        'landmarks': landmarks,
+        'collected_stamps_count': user.collected_stamps
+    })
+
+
+@main_bp.route('/upload', methods=['POST'])
+def upload():
+    user = get_user_from_header()
+    if not user:
+        return jsonify({'error': 'User not found. Please provide a valid UUID header.'}), 404
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    image_file = request.files['file']
+    if image_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    image_path = os.path.join('/tmp', f"{user.uuid}_{image_file.filename}")
+    image_file.save(image_path)
+
+    landmark_id = detect_landmark(image_path)
+    os.remove(image_path)
+
+    if landmark_id and landmark_id not in user.stamps_collected:
+        user.stamps_collected.append(landmark_id)
+        user.collected_stamps = len(user.stamps_collected)
+        db.session.commit()
+        return jsonify({'status': 'stamp_granted', 'landmark_id': landmark_id})
+    
+    return jsonify({'status': 'no_new_stamp'})
+
+@main_bp.route('/final', methods=['GET'])
 def final_page():
-    user_uuid = request.cookies.get('uuid')
-    user = User.query.filter_by(uuid=user_uuid).first()
-    
-    if user and user.collected_stamps >= 5:
-        # QRコード生成ロジックはテンプレート側でuuidを使って実行
-        return render_template('final.html', user_uuid=user_uuid)
-    
-    return redirect(url_for('main_bp.index'))
+    user = get_user_from_header()
+    if not user:
+        return jsonify({'error': 'User not found. Please provide a valid UUID header.'}), 404
+
+    # ここではコンプリートに必要なスタンプ数を5つと仮定
+    if user.collected_stamps >= 5:
+        return jsonify({
+            'status': 'complete',
+            'user_uuid': user.uuid,
+            'has_prize': user.has_prize
+        })
+
+    return jsonify({'status': 'not_complete', 'message': 'The user has not collected enough stamps.'})

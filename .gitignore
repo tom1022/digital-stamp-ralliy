@@ -55,7 +55,6 @@ logs/
 *.hdf5
 *.pkl
 *.pickle
-*.pt
 *.pth
 *.onnx
 checkpoints/
@@ -72,5 +71,3 @@ Thumbs.db
 # Docker関連
 .dockerignore
 
-# Jupyter Notebook
-.ipynb_checkpoints
