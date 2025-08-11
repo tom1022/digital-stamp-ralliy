@@ -34,10 +34,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN flask db init
-RUN flask db migrate -m "Initial migration."
-RUN flask db upgrade
-
 USER ${username}
 
 # CMD ["python", "app.py"]

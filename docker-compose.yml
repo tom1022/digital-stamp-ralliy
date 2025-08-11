@@ -18,6 +18,7 @@ services:
     volumes:
       - ..:/app:cached
     environment:
+      - FLASK_APP=app:create_app()
       - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
     command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app.create_app():app"]
     expose:
