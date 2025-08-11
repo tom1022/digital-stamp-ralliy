@@ -39,13 +39,6 @@ ENV/
 *.log
 logs/
 
-# 環境設定ファイル
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
 # データベース
 *.db
 *.sqlite3
