@@ -54,9 +54,6 @@ docker compose --profile production up -d --build
 
 `/app/.env` を参考に、DB接続情報などを設定してください。
 
-### デプロイ手順
-
-
 ---
 
 ## 主なAPIエンドポイント
