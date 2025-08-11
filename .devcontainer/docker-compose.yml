@@ -7,3 +7,25 @@ services:
       - ..:/app:cached
     command: /bin/sh -c "while sleep 1000; do :; done"
     user: vscode
+
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/app:cached
+    command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app.create_app():app"]
+    user: vscode
+    expose:
+      - 8000
+    profiles: ["production"]
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - .devcontainer/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:80
+    depends_on:
+      - app
+    profiles: ["production"]
