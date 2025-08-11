@@ -1,5 +1,5 @@
 from flask import Flask
-from extensions import db, jwt
+from extensions import db, jwt, migrate
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -7,6 +7,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
+    migrate.init_app(app, db)
 
     from models import user
     from models.user import User

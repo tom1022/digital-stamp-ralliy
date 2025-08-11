@@ -34,6 +34,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN flask db init
+RUN flask db migrate -m "Initial migration."
+RUN flask db upgrade
+
 RUN mkdir data/
 RUN wget https://github.com/THU-MIG/yolov10/releases/download/v1.1/yolov10x.pt -O data/yolov10x.pt
 
