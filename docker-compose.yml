@@ -1,0 +1,40 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    restart: always
+    volumes:
+      - ..:/app:cached
+    environment:
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+    command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app.create_app():app"]
+    expose:
+      - 8000
+    profiles: ["production"]
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:80
+    depends_on:
+      - app
+    profiles: ["production"]
+
+volumes:
+  mysql-data:
+    driver: local
