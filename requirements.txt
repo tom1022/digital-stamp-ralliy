@@ -1,2 +1,11 @@
-flask
-ultralytics[yolo]
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-JWT-Extended
+Pillow
+ultralytics
+torch
+opencv-python
+pyqrcode
+gunicorn
+pymysql
