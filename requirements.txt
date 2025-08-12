@@ -9,3 +9,5 @@ opencv-python
 pyqrcode
 gunicorn
 pymysql
+cryptography
+python-dotenv

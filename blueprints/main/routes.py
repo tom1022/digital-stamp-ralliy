@@ -26,7 +26,7 @@ def get_user_from_header():
 
 # --- APIエンドポイント ---
 
-@main_bp.route('/', methods=['POST'])
+@main_bp.route('/', methods=['GET'])
 def create_or_get_user():
     """UUIDを生成または取得し、ユーザー情報を返す"""
     user = get_user_from_header()
